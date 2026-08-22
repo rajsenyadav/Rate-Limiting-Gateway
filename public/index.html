@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM API Gateway | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030303;
+            --panel-bg: rgba(20, 20, 20, 0.6);
+            --border: #262626;
+            --border-glow: rgba(56, 189, 248, 0.3);
+            --text-main: #f5f5f5;
+            --text-muted: #a3a3a3;
+            
+            /* Node Colors */
+            --c-blue: #3b82f6;
+            --c-yellow: #eab308;
+            --c-red: #ef4444;
+            --c-purple: #a855f7;
+            --c-green: #22c55e;
+            
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            /* Subtle Grid Background */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: center center;
+        }
+
+        /* --- Header --- */
+        .header {
+            padding: 2rem 4rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(3,3,3,0.8);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.04em; }
+        .logo span { color: var(--c-blue); }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--c-green);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .dot { width: 8px; height: 8px; background: var(--c-green); border-radius: 50%; box-shadow: 0 0 10px var(--c-green); }
+
+        /* --- Main Layout --- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem 4rem;
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .panel-header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* --- Left Pane: Chat --- */
+        .chat-history {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-height: 400px;
+        }
+
+        .msg { display: flex; flex-direction: column; max-width: 85%; }
+        .msg-user { align-self: flex-end; }
+        .msg-ai { align-self: flex-start; }
+
+        .bubble {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .msg-user .bubble { background: #262626; color: #fff; border-bottom-right-radius: 4px; }
+        .msg-ai .bubble { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-bottom-left-radius: 4px; }
+
+        .chat-input {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0,0,0,0.2);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #111;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 1rem 1.5rem;
+            border-radius: 99px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus { border-color: var(--c-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
+
+        button {
+            background: var(--text-main);
+            color: #000;
+            border: none;
+            padding: 0 2rem;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- Right Pane: Telemetry --- */
+        .telemetry-body {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+            flex: 1;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .metric-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .m-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-family: var(--font-mono); }
+        .m-val { font-size: 2.5rem; font-weight: 700; font-family: var(--font-mono); display: flex; align-items: baseline; gap: 8px;}
+        .m-val span { font-size: 1rem; color: var(--text-muted); font-weight: 400;}
+
+        /* Architecture Nodes */
+        .arch-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+        }
+        
+        /* The connecting line */
+        .arch-container::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 24px;
+            bottom: 24px;
+            width: 2px;
+            background: var(--border);
+            z-index: 1;
+        }
+
+        .node {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: all 0.4s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .n-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #111;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.4s ease;
+        }
+
+        .n-info h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-muted); transition: color 0.4s; }
+        .n-info p { font-size: 0.85rem; color: #737373; font-family: var(--font-mono); }
+
+        /* Node Animations - Glowing States */
+        .node.active-blue .n-icon { border-color: var(--c-blue); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1); }
+        .node.active-blue h3 { color: var(--c-blue); }
+        .node.active-blue { border-color: rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.05); }
+
+        .node.active-yellow .n-icon { border-color: var(--c-yellow); box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.1); }
+        .node.active-yellow h3 { color: var(--c-yellow); }
+        .node.active-yellow { border-color: rgba(234, 179, 8, 0.2); background: rgba(234, 179, 8, 0.05); }
+
+        .node.active-red .n-icon { border-color: var(--c-red); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); }
+        .node.active-red h3 { color: var(--c-red); }
+        .node.active-red { border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); }
+
+        .node.active-purple .n-icon { border-color: var(--c-purple); box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); background: rgba(168, 85, 247, 0.1); }
+        .node.active-purple h3 { color: var(--c-purple); }
+        .node.active-purple { border-color: rgba(168, 85, 247, 0.2); background: rgba(168, 85, 247, 0.05); }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr; padding: 2rem; }
+            .header { padding: 1.5rem 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header -->
+    <header class="header">
+        <div class="logo">Gateway<span>.io</span></div>
+        <div class="status-badge">
+            <div class="dot"></div> Live Telemetry
+        </div>
+    </header>
+
+    <div class="dashboard">
+        
+        <!-- Left Pane: Interactive Chat -->
+        <div class="panel">
+            <div class="panel-header">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg>
+                Terminal Playground
+            </div>
+            
+            <div class="chat-history" id="chatHistory">
+                <div class="msg msg-ai">
+                    <div class="bubble">
+                        Welcome to the Gateway demo. Send a message below to watch the live telemetry dashboard track the request through the backend infrastructure.
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Type a prompt to test the proxy..." onkeypress="handleEnter(event)">
+                <button id="sendBtn" onclick="sendRequest()">Execute</button>
+            </div>
+        </div>
+
+        <!-- Right Pane: Telemetry Dashboard -->
+        <div class="panel">
+            <div class="panel-header" style="color: var(--c-blue);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"></path></svg>
+                System Telemetry
+            </div>
+            
+            <div class="telemetry-body">
+                <!-- Metrics -->
+                <div class="metrics-row">
+                    <div class="metric-box">
+                        <div class="m-title">Gateway Latency</div>
+                        <div class="m-val" id="latGauge">0<span>ms</span></div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="m-title">Tokens Extracted</div>
+                        <div class="m-val" id="tokGauge">0<span>/mo</span></div>
+                    </div>
+                </div>
+
+                <!-- Architecture Nodes -->
+                <div class="arch-container">
+                    <div class="node" id="n-client">
+                        <div class="n-icon">💻</div>
+                        <div class="n-info">
+                            <h3>1. Client Request</h3>
+                            <p>POST /v1/chat/completions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="node" id="n-mongo">
+                        <div class="n-icon">🛡️</div>
+                        <div class="n-info">
+                            <h3>2. MongoDB Auth</h3>
+                            <p>Validating API Key & Budget</p>
+                        </div>
+                    </div>
+                    
+                    <div class="node" id="n-redis">
+                        <div class="n-icon">⚡</div>
+                        <div class="n-info">
+                            <h3>3. Redis Limiter</h3>
+                            <p>Atomic Token-Bucket Check</p>
+                        </div>
+                    </div>
+                    
+                    <div class="node" id="n-llm">
+                        <div class="n-icon">🧠</div>
+                        <div class="n-info">
+                            <h3>4. AI Proxy</h3>
+                            <p>Forwarding to OpenAI API</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        
+        // Count up animation for metrics
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start) + '<span></span>';
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    // Restore the span
+                    if(obj.id === 'latGauge') obj.innerHTML = end + '<span>ms</span>';
+                    if(obj.id === 'tokGauge') obj.innerHTML = end + '<span>/mo</span>';
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendRequest();
+        }
+
+        async function sendRequest() {
+            const inputEl = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const history = document.getElementById('chatHistory');
+            const text = inputEl.value.trim();
+
+            if (!text) return;
+
+            // UI Reset
+            inputEl.value = '';
+            inputEl.disabled = true;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            // Add User Message
+            history.insertAdjacentHTML('beforeend', `<div class="msg msg-user"><div class="bubble">${text}</div></div>`);
+            history.scrollTop = history.scrollHeight;
+
+            // Nodes
+            const nc = document.getElementById('n-client');
+            const nm = document.getElementById('n-mongo');
+            const nr = document.getElementById('n-redis');
+            const nl = document.getElementById('n-llm');
+
+            // Reset nodes
+            [nc, nm, nr, nl].forEach(n => n.className = 'node');
+
+            const startTime = performance.now();
+
+            // Sequence Animation
+            nc.classList.add('active-blue');
+            await sleep(400);
+            
+            nc.classList.remove('active-blue');
+            nm.classList.add('active-yellow');
+            await sleep(500); // Simulate DB latency
+            
+            nm.classList.remove('active-yellow');
+            nr.classList.add('active-red');
+            await sleep(200); // Simulate Redis latency
+            
+            nr.classList.remove('active-red');
+            nl.classList.add('active-purple');
+
+            // Fetch Mock Data
+            try {
+                const res = await fetch('/mock/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [{ role: "user", content: text }]
+                    })
+                });
+                
+                const data = await res.json();
+                const latency = Math.round(performance.now() - startTime);
+
+                // Add AI Message
+                await sleep(400); // UI breathing room
+                history.insertAdjacentHTML('beforeend', `
+                    <div class="msg msg-ai">
+                        <div class="bubble">${data.choices[0].message.content}</div>
+                    </div>
+                `);
+                history.scrollTop = history.scrollHeight;
+
+                // Animate Metrics
+                animateValue(document.getElementById('latGauge'), 0, latency, 1000);
+                
+                // Keep a running total of tokens for the demo session
+                const tokGauge = document.getElementById('tokGauge');
+                let currentTokens = parseInt(tokGauge.innerText) || 0;
+                let newTokens = currentTokens + data.usage.total_tokens;
+                animateValue(tokGauge, currentTokens, newTokens, 1000);
+
+            } catch (err) {
+                history.insertAdjacentHTML('beforeend', `<div class="msg msg-ai"><div class="bubble" style="color: #ef4444;">Error connecting to backend.</div></div>`);
+            }
+
+            // Cleanup
+            nl.classList.remove('active-purple');
+            inputEl.disabled = false;
+            btn.disabled = false;
+            btn.textContent = 'Execute';
+            inputEl.focus();
+        }
+    </script>
+</body>
+</html>

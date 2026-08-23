@@ -19,7 +19,7 @@
 ---
 
 ## ⚡ The Problem: Tokens vs. Requests
-Standard API Gateways (like Nginx or AWS API Gateway) rate-limit based on **Requests Per Second (RPS)**. However, AI providers like OpenAI and Anthropic charge by the **Token**. 
+Standard API Gateways rate-limit based on **Requests Per Second (RPS)**. However, AI providers like OpenAI and Anthropic charge by the **Token**. 
 
 If a malicious actor sends just *one* request, but forces the LLM to generate a 10,000-word essay, a standard gateway will let it pass—potentially costing you thousands of dollars in minutes. 
 
@@ -57,33 +57,6 @@ The gateway is built for high concurrency and zero race conditions, processing r
 - **Caching & Limiting:** Redis (ioredis) for atomic operations
 -
 
-## 🚀 Quick Start (Local Setup)
-
-### Prerequisites
-- Node.js (v18+)
-- MongoDB (Local or Atlas)
-- Redis (Local or Upstash)
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/mridulrajgaria/LLM-API-Gateway-with-Token-Based-Rate-Limiting.git
-cd LLM-API-Gateway-with-Token-Based-Rate-Limiting
-npm install
-```
-
-### 2. Environment Variables
-Create a `.env` file in the root directory:
-```env
-PORT=3000
-NODE_ENV=development
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster...
-REDIS_URI=rediss://default:<password>@...
-LLM_API_URL=https://api.openai.com/v1/chat/completions
-LLM_API_KEY=sk-your-openai-key
-LLM_MODEL=gpt-4o-mini
-RATE_LIMIT_MAX_REQUESTS=100
-RATE_LIMIT_WINDOW_MS=60000
-```
 
 ---
 <div align="center">

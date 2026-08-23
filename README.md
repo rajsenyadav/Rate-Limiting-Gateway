@@ -24,9 +24,14 @@ Standard API Gateways rate-limit based on **Requests Per Second (RPS)**. However
 If a malicious actor sends just *one* request, but forces the LLM to generate a 10,000-word essay, a standard gateway will let it pass—potentially costing you thousands of dollars in minutes. 
 
 ## 🛡️ The Solution
-This project acts as a secure tollbooth between your users and the LLM providers. It doesn't just limit requests; it intercepts the response, parses the JSON payload, extracts the exact token usage, and deducts it from the user's allocated budget in MongoDB. 
+"The solution is a proxy gateway that sits between clients and the LLM API, enforcing role-based rate limits using the token-bucket algorithm, with two independent layers — a short-window burst limiter and a daily cost budget — both backed by Redis so the limits hold correctly across multiple gateway instances. The critical part of the solution isn't just the limiting logic itself, but making that logic atomic: the check-and-consume step runs as a single Redis Lua script, so it can't be split apart and exploited by concurrent requests. That's what closes the race condition and makes the limiter trustworthy under real load, not just in the happy path."
 
-If a user exceeds their token budget, they are instantly cut off, **protecting your OpenAI API keys from abuse and bankruptcy.**
+Broken into the 4 solution components, if asked to list them:
+
+1.Rate-limiting algorithm → token-bucket (allows bursts, caps average rate)
+2.Shared, multi-instance-safe state → Redis (not in-memory, so it works across gateway replicas and survives restarts)
+3.Separation of concerns → two independent layers (burst vs. daily budget), so short-term and long-term control don't interfere with each other
+4.Correctness under concurrency → atomic Redis Lua script (check-and-consume as one indivisible operation), which is what actually makes the whole thing safe to trust under real traffic
 
 ---
 

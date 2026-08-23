@@ -55,10 +55,7 @@ The gateway is built for high concurrency and zero race conditions, processing r
 - **Backend:** Node.js, Express.js
 - **Database:** MongoDB (Mongoose) for persistent auth and token logging
 - **Caching & Limiting:** Redis (ioredis) for atomic operations
-- **Frontend:** HTML5, Vanilla CSS (Glassmorphism), JavaScript
-- **DevOps:** Docker, Docker Compose, Render (Cloud Deployment)
-
----
+-
 
 ## 🚀 Quick Start (Local Setup)
 
@@ -87,26 +84,6 @@ LLM_MODEL=gpt-4o-mini
 RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MS=60000
 ```
-
-### 3. Seed Database & Run
-Inject mock API keys and budgets into your database, then start the server.
-```bash
-npm run seed
-npm run dev
-```
-
-Visit `http://localhost:3000` to interact with the Dual-Pane Command Center.
-
----
-
-## 🌐 Cloud Deployment
-
-This project is fully dockerized and ready for production deployment. It can be easily deployed to Render, Railway, or AWS.
-
-1. Connect your GitHub repository to your cloud provider.
-2. Select **Docker** as the runtime environment.
-3. Add the environment variables listed above.
-4. Deploy! 
 
 ---
 <div align="center">
